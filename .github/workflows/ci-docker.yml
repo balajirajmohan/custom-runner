@@ -37,7 +37,7 @@ jobs:
         working-directory: ./sample-app
         run: |
           echo "Installing Node.js dependencies..."
-          npm ci
+          npm install
       
       - name: Run tests
         working-directory: ./sample-app
