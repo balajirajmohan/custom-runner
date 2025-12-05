@@ -15,7 +15,6 @@ jobs:
     # This runs the entire job inside a Docker container
     container:
       image: node:18-alpine
-      options: --user root
     
     steps:
       - name: Checkout code
@@ -71,7 +70,6 @@ jobs:
     
     container:
       image: node:${{ matrix.node-version }}-alpine
-      options: --user root
     
     steps:
       - name: Checkout code
