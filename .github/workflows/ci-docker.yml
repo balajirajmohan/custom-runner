@@ -1,0 +1,146 @@
+name: CI with Self-Hosted Runner (Docker)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-in-docker:
+    name: Test Node.js App in Docker Container
+    runs-on: self-hosted
+    
+    # This runs the entire job inside a Docker container
+    container:
+      image: node:18-alpine
+      options: --user root
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Display environment info
+        run: |
+          echo "================================"
+          echo "Running inside Docker container!"
+          echo "================================"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "OS: $(cat /etc/os-release | grep PRETTY_NAME)"
+          echo "Working directory: $(pwd)"
+          echo "User: $(whoami)"
+          echo "================================"
+      
+      - name: Install dependencies
+        working-directory: ./sample-app
+        run: |
+          echo "Installing Node.js dependencies..."
+          npm ci
+      
+      - name: Run tests
+        working-directory: ./sample-app
+        run: |
+          echo "Running Jest tests..."
+          npm test
+      
+      - name: Run tests with coverage
+        working-directory: ./sample-app
+        run: |
+          echo "Running tests with coverage..."
+          npm run test:coverage
+      
+      - name: Display test results
+        run: |
+          echo "================================"
+          echo "✅ All tests passed successfully!"
+          echo "================================"
+          echo "Job completed in Docker container"
+          echo "Runner: self-hosted AWS EC2"
+          echo "Container: node:18-alpine"
+          echo "================================"
+
+  test-multiple-node-versions:
+    name: Test with Node ${{ matrix.node-version }}
+    runs-on: self-hosted
+    
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    container:
+      image: node:${{ matrix.node-version }}-alpine
+      options: --user root
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Display Node version
+        run: |
+          echo "Testing with Node.js $(node --version)"
+      
+      - name: Install dependencies
+        working-directory: ./sample-app
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: ./sample-app
+        run: npm test
+      
+      - name: Success message
+        run: |
+          echo "✅ Tests passed on Node.js ${{ matrix.node-version }}"
+
+  test-runner-direct:
+    name: Test on Runner (No Container)
+    runs-on: self-hosted
+    
+    # This job runs directly on the runner, not in a container
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Display environment info
+        run: |
+          echo "================================"
+          echo "Running directly on self-hosted runner!"
+          echo "================================"
+          echo "OS: $(uname -a)"
+          echo "Working directory: $(pwd)"
+          echo "User: $(whoami)"
+          echo "================================"
+      
+      - name: Check Docker availability
+        run: |
+          echo "Docker version:"
+          docker --version
+          echo "Docker is available on the runner!"
+      
+      - name: Run tests in Docker manually
+        working-directory: ./sample-app
+        run: |
+          echo "Building custom Docker image for tests..."
+          docker build -t sample-app-test -f- . <<EOF
+          FROM node:18-alpine
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci
+          COPY . .
+          CMD ["npm", "test"]
+          EOF
+          
+          echo "Running tests inside Docker container..."
+          docker run --rm sample-app-test
+          
+          echo "Cleaning up Docker image..."
+          docker rmi sample-app-test
+      
+      - name: Summary
+        run: |
+          echo "================================"
+          echo "✅ Job completed on self-hosted runner"
+          echo "✅ Tests executed in custom Docker container"
+          echo "================================"
+

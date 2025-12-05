@@ -1,0 +1,40 @@
+name: Simple Test Workflow
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  hello-world:
+    name: Hello from Self-Hosted Runner
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Display runner information
+        run: |
+          echo "🚀 Running on self-hosted runner!"
+          echo "Hostname: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+      
+      - name: Check Docker
+        run: |
+          echo "Checking Docker installation..."
+          docker --version
+          docker ps
+      
+      - name: Simple test in container
+        run: |
+          echo "Running a simple test in Ubuntu container..."
+          docker run --rm ubuntu:22.04 bash -c "echo 'Hello from Docker container!'; uname -a"
+      
+      - name: Success
+        run: |
+          echo "✅ Self-hosted runner is working correctly!"
+          echo "✅ Docker is available and functional!"
+
